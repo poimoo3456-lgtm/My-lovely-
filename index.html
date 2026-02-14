@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Love Surprise Creator 💖</title>
+<title>Love Surprise 💖</title>
 
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -17,7 +17,6 @@ body{
   align-items:center;
   height:100vh;
 }
-
 .box{
   background:white;
   padding:25px;
@@ -26,19 +25,16 @@ body{
   max-width:420px;
   box-shadow:0 10px 30px rgba(0,0,0,0.2);
 }
-
 textarea,input{
   width:100%;
   margin-top:10px;
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
-  font-size:14px;
 }
-
 button{
-  margin-top:15px;
-  padding:10px;
+  margin-top:10px;
+  padding:12px;
   width:100%;
   border:none;
   border-radius:10px;
@@ -47,37 +43,33 @@ button{
   font-size:16px;
   cursor:pointer;
 }
-
+.hidden{display:none;}
 .story{
   white-space:pre-line;
   margin-top:15px;
-  font-size:16px;
 }
-
-.hidden{ display:none; }
 </style>
 </head>
 <body>
 
-<!-- หน้า Creator -->
+<!-- ===== หน้า Creator ===== -->
 <div class="box" id="creator">
   <h2>💖 สร้างเซอร์ไพรส์แฟน</h2>
 
-  <textarea id="message" placeholder="เขียนข้อความถึงแฟนตรงนี้..."></textarea>
-
+  <textarea id="message" placeholder="เขียนข้อความถึงแฟน..."></textarea>
   <input type="text" id="youtube" placeholder="วางลิงก์ YouTube (ถ้ามี)">
-
   <input type="password" id="password" placeholder="ตั้งรหัสผ่าน">
 
   <button onclick="generateLink()">สร้างลิงก์ 💌</button>
 
   <textarea id="result" placeholder="ลิงก์จะขึ้นตรงนี้..." readonly></textarea>
+  <button onclick="copyLink()">📋 คัดลอกลิงก์</button>
 </div>
 
 
-<!-- หน้า Viewer -->
+<!-- ===== หน้า Viewer ===== -->
 <div class="box hidden" id="viewer">
-  <h2 id="title">🔐 ใส่รหัสก่อน</h2>
+  <h2 id="viewerTitle">🔐 ใส่รหัสก่อน</h2>
 
   <div id="lockBox">
     <input type="password" id="inputPass" placeholder="ใส่รหัสผ่าน">
@@ -88,80 +80,101 @@ button{
   <div id="content" class="hidden">
     <div class="story" id="showMessage"></div>
     <div id="videoBox"></div>
+    <button onclick="goHome()">🔙 สร้างใหม่</button>
   </div>
 </div>
 
+
 <script>
 
-// =================== สร้างลิงก์ ===================
+// ===== สร้างลิงก์ =====
 function generateLink(){
 
   const message=document.getElementById("message").value.trim();
   const youtube=document.getElementById("youtube").value.trim();
   const password=document.getElementById("password").value.trim();
 
-  if(message==="" || password===""){
-    alert("กรอกข้อความกับรหัสก่อนนะ 💖");
+  if(!message || !password){
+    alert("กรอกข้อความกับรหัสก่อน 💖");
     return;
   }
 
-  let youtubeID="";
-
+  let ytID="";
   if(youtube){
-    const regExp=/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/;
-    const match=youtube.match(regExp);
-    if(match && match[1]){
-      youtubeID=match[1];
-    }
+    const reg=/^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/;
+    const match=youtube.match(reg);
+    if(match){ ytID=match[1]; }
   }
 
   const data={
     msg:message,
-    yt:youtubeID,
+    yt:ytID,
     pass:password
   };
 
-  const encoded=btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  const link=window.location.href.split("?")[0] + "?data=" + encoded;
+  const encoded=btoa(encodeURIComponent(JSON.stringify(data)));
+
+  const baseUrl=window.location.origin + window.location.pathname;
+  const link=baseUrl + "?data=" + encoded;
 
   document.getElementById("result").value=link;
 }
 
 
-// =================== โหลดข้อมูลจากลิงก์ ===================
+// ===== คัดลอกลิงก์ =====
+function copyLink(){
+  const link=document.getElementById("result").value;
+  if(!link){
+    alert("ยังไม่มีลิงก์ 💔");
+    return;
+  }
+  navigator.clipboard.writeText(link)
+  .then(()=>alert("คัดลอกแล้ว 💖"))
+  .catch(()=>alert("กดค้างแล้วคัดลอกเองนะ"));
+}
+
+
+// ===== โหลดข้อมูลจาก URL =====
 function getData(){
   const params=new URLSearchParams(window.location.search);
   const encoded=params.get("data");
   if(!encoded) return null;
 
   try{
-    return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    return JSON.parse(decodeURIComponent(atob(encoded)));
   }catch{
     return null;
   }
 }
 
-const data=getData();
 
-if(data){
+// ===== ตรวจตอนโหลดหน้า =====
+window.onload=function(){
+
+  const data=getData();
+  if(!data) return;
+
   document.getElementById("creator").classList.add("hidden");
   document.getElementById("viewer").classList.remove("hidden");
-}
+
+  window.currentData=data;
+};
 
 
-// =================== ปลดล็อก ===================
+// ===== ปลดล็อก =====
 function unlock(){
 
   const input=document.getElementById("inputPass").value;
+  const data=window.currentData;
 
   if(input===data.pass){
 
     document.getElementById("lockBox").classList.add("hidden");
     document.getElementById("content").classList.remove("hidden");
-    document.getElementById("title").innerText="💖 ข้อความถึงเธอ 💖";
+    document.getElementById("viewerTitle").innerText="💖 ข้อความถึงเธอ 💖";
     document.getElementById("showMessage").innerText=data.msg;
 
-    confetti({particleCount:200,spread:100});
+    confetti({particleCount:150,spread:100});
 
     if(data.yt){
       document.getElementById("videoBox").innerHTML=
@@ -173,7 +186,12 @@ function unlock(){
   }else{
     document.getElementById("error").innerText="รหัสผิดนะ 💔";
   }
+}
 
+
+// ===== กลับหน้าแรก =====
+function goHome(){
+  window.location.href = window.location.origin + window.location.pathname;
 }
 
 </script>
